@@ -29,13 +29,11 @@ export default function PokemonList() {
         return response
       })
 
-      const pokemonResults = await Promise.all(pokemonInfo)
-
       const pokemonList = list.map((pokemon, index) => {
         return {
           name: pokemon.name,
-          pokemonImg: pokemonResults[index].sprites.other.dream_world.front_default,
-          types: pokemonResults[index].types
+          pokemonImg: pokemonInfo[index].sprites.other.dream_world.front_default,
+          types: pokemonInfo[index].types
         }
       });
 
@@ -50,7 +48,7 @@ export default function PokemonList() {
     try {
       const { results: allPokemons } = await fetchData({ endpoint: `pokemon/?limit=20&offset=${currentPage * 20}` })
       const pokemonList = await getPokemonInfo(allPokemons)
-      currentPage > 0 ? setPokemons(prevState => [...prevState, ...pokemonList]) : setPokemons(pokemonList)
+      currentPage > 0 ? setPokemons(prevState => [prevState, pokemonList]) : setPokemons(pokemonList)
     } catch (error) {
       console.error('Error fetching Pokemon info:', error);
     }
@@ -105,12 +103,22 @@ export default function PokemonList() {
         <SearchPokemon onSearch={handleSearchPokemon} />
       </Row>
       <Row gutter={[12, 12]}>
-        {(searchList.length ? searchList : pokemons).map((pokemon, index) =>
-          <Col span={6} key={`Pokemon-item-${index}`}>
-            <PokemonCard {...pokemon} onClick={onCardClick} />
-          </Col>
-        )}
+        {searchList.length > 0 &&
+          searchList.map((pokemon) => (
+            <Col span={6} >
+              <PokemonCard {...pokemon} onClick={onCardClick} />
+            </Col>
+          ))
+        }
 
+        {pokemons.length > 0 &&
+          pokemons.map((pokemon) => (
+            <Col span={6} >
+              <PokemonCard {...pokemon} onClick={onCardClick} />
+            </Col>
+          ))
+        }
+        
       </Row>
       <Row align={"center"} style={{ width: "100%" }}>
         <Button type='primary' onClick={loadPokemons}>Cargar mas...</Button>
