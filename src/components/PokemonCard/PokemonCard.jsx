@@ -3,10 +3,10 @@ import React from 'react'
 import PropTypes from 'prop-types';
 import { TYPE_LIST } from './typeList'
 
-export default function PokemonCard({ name, pokemonImg, types, pokemonUrl, onClick }) {
+export default function PokemonCard({ name, pokemonImg, types,  onClick }) {
   return (
     <Card
-      onClick={() => onClick(pokemonUrl, name)}
+      onClick={() => onClick(name)}
       hoverable
       cover={<img
         alt={name}

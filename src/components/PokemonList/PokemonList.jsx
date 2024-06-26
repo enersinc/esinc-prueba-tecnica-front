@@ -34,7 +34,6 @@ export default function PokemonList() {
       const pokemonList = list.map((pokemon, index) => {
         return {
           name: pokemon.name,
-          pokemonUrl: pokemon.url,
           pokemonImg: pokemonResults[index].sprites.other.dream_world.front_default,
           types: pokemonResults[index].types
         }
@@ -82,10 +81,9 @@ export default function PokemonList() {
 
   }
 
-  const onCardClick = async (pokemonUlr, name) => {
+  const onCardClick = async (name) => {
 
-    const pokemonId = getPokemonIdByUrl(pokemonUlr)
-    const pokemon = await fetchData({ endpoint: `pokemon/${pokemonId}` })
+    const pokemon = await fetchData({ endpoint: `pokemon/${name}` })
 
     setCurrentPokemon({
       name: name,
