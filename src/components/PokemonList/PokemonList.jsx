@@ -122,7 +122,7 @@ export default function PokemonList() {
         <Button type='primary' onClick={loadPokemons}>Cargar mas...</Button>
       </Row>
 
-      <PokemonDetail {...currentPokemon} openModal={openDetail} handleOpenModal={handleCloseDetail} />
+      <PokemonDetail {...currentPokemon} openModal={openDetail} handleOpenModal={handleCloseDetail} />a
     </Row>
   )
 }
