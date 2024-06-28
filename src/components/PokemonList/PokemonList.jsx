@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect,  useState } from 'react'
 import { fetchData } from '../../services/fetchData';
-import { Button, Col, Modal, Pagination, Row } from 'antd';
+import { Button, Col, Row } from 'antd';
 import PokemonCard from '../PokemonCard/PokemonCard';
 import SearchPokemon from './SearchPokemon';
 import PokemonDetail from './PokemonDetail';
@@ -88,8 +88,6 @@ export default function PokemonList() {
       pokemonImg: pokemon.sprites.other.dream_world.front_default,
       stats: pokemon.stats
     })
-
-    setOpenDetail(true)
 
   }
 
