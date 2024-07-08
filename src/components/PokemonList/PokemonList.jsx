@@ -99,12 +99,12 @@ export default function PokemonList() {
   const onCardClick = async (name) => {
 
     const pokemon = await fetchData({ endpoint: `pokemon/${name}` })
-
     setCurrentPokemon({
       name: name,
       pokemonImg: pokemon.sprites.other.dream_world.front_default,
       stats: pokemon.stats
     })
+    setOpenDetail(true)
 
   }
 
