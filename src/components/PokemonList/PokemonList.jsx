@@ -16,6 +16,7 @@ export default function PokemonList() {
   const [totalPages, setTotalPages] = useState(0)
 
   const [alertError, setAlertError] = useState(false)
+  const [searchEmptyError, setSearchEmptyError] = useState(false)
 
   const getPokemonIdByUrl = (url) => {
     const segments = url.split("/");
@@ -61,12 +62,16 @@ export default function PokemonList() {
   }
 
   const handleSearchPokemon = async (value) => {
-    console.debug('\n\n\n\t handleSearchPokemon: ', value)
 
     try {
       if (value) {
         const { results: allPokemons } = await fetchData({ endpoint: 'pokemon/?limit=10000&offset=0' });
         const filterPokemons = allPokemons.filter((pokemon) => pokemon.name.includes(value));
+        if(filterPokemons.length === 0){
+          searchEmptyError(true)
+        }else{
+          searchEmptyError(false)
+        }
         const pokemonsNoFilter = allPokemons.filter((pokemon) => !pokemon.name.includes(value));
         setPokemons([...pokemonsNoFilter])
         const pokemonList = await getPokemonInfo(filterPokemons);
@@ -113,6 +118,7 @@ export default function PokemonList() {
       </Row>
 
       {alertError && <Alert message="Oups! No se puede visualizar la lista de Pokemones." type="error" />}
+      {searchEmptyError && <Alert message="Oups! Pokemones no Encontrado." type="warning" />}
 
       <Row gutter={[12, 12]}>
         {searchList.length > 0 &&
