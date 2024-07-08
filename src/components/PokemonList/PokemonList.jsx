@@ -1,128 +1,101 @@
-import React, { useEffect,  useState } from 'react'
-import { fetchData } from '../../services/fetchData';
-import { Button, Col, Row } from 'antd';
-import PokemonCard from '../PokemonCard/PokemonCard';
-import SearchPokemon from './SearchPokemon';
-import PokemonDetail from './PokemonDetail';
+/* eslint-disable react-hooks/exhaustive-deps */
+import { Col, Empty, Pagination, Row, Spin } from "antd";
+import React, { useMemo, useState } from "react";
+import {
+  useGetDataPokemons,
+  useGetDataPokemonsByUrl,
+} from "../../services/pokemonService";
+import PokemonCard from "../PokemonCard/PokemonCard";
+import PokemonDetail from "./PokemonDetail";
+import SearchPokemon from "./SearchPokemon";
 
 export default function PokemonList() {
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
+  const [search, setSearch] = useState("");
+  const [openDetail, setOpenDetail] = useState(false);
+  const [currentPokemon, setCurrentPokemon] = useState({});
+  const { data: pokemons = [], isPending } = useGetDataPokemons({
+    limit: 500,
+    page: 0,
+  });
+  const { data: allPokemons = [], isPending: isAllPending } =
+    useGetDataPokemonsByUrl(pokemons);
 
-  const [pokemons, setPokemons] = useState([])
-  const [currentPage, setCurrentPage] = useState(0)
-  const [searchList, setSearchList] = useState([])
-  const [openDetail, setOpenDetail] = useState(false)
-  const [currentPokemon, setCurrentPokemon] = useState({})
+  const filterPokemons = useMemo(() => {
+    if (search) {
+      return allPokemons.filter((pokemon) =>
+        pokemon.name.toLowerCase().includes(search.toLowerCase())
+      );
+    }
 
-  const getPokemonIdByUrl = (url) => {
-    const segments = url.split("/");
-    const pokemonId = segments[segments.length - 2]
-    return pokemonId
+    return allPokemons.slice(page * pageSize, (page + 1) * pageSize);
+  });
 
-  }
+  const handleOpenDetail = (pokemon) => {
+    setCurrentPokemon(pokemon);
+    setOpenDetail(true);
+  };
 
-  const getPokemonInfo = async (list) => {
+  const handleChangePagination = (e) => {
+    setPage(e);
+  };
 
-    try {
+  const handleChangeSizePagination = (currentPage, newPageSize) => {
+    setPageSize(newPageSize);
+  };
 
-      const pokemonInfo = list.map(async (pokemon) => {
-        const response = await fetchData({ endpoint: `pokemon/${getPokemonIdByUrl(pokemon.url)}` })
-        return response
-      })
-
-      const pokemonList = list.map((pokemon, index) => {
-        return {
-          name: pokemon.name,
-          pokemonImg: pokemonInfo[index].sprites.other.dream_world.front_default,
-          types: pokemonInfo[index].types
+  const renderPokemons = () => {
+    if (filterPokemons.length === 0 || isPending || isAllPending) {
+      const getMessage = () => {
+        if (!isAllPending && !isPending) {
+          return "No se encontraron resultados...";
         }
-      });
+        return "";
+      };
 
-      return pokemonList
-    } catch (error) {
-      console.error('Error fetching Pokemon info:', error);
+      return (
+        <Spin spinning={isPending || isAllPending} tip="Cargando...">
+          <Empty
+            description={getMessage()}
+            imageStyle={{
+              height: 350,
+            }}
+          />
+        </Spin>
+      );
     }
-  }
 
-  const getData = async () => {
-
-    try {
-      const { results: allPokemons } = await fetchData({ endpoint: `pokemon/?limit=20&offset=${currentPage * 20}` })
-      const pokemonList = await getPokemonInfo(allPokemons)
-      currentPage > 0 ? setPokemons(prevState => [prevState, pokemonList]) : setPokemons(pokemonList)
-    } catch (error) {
-      console.error('Error fetching Pokemon info:', error);
-    }
-  }
-
-  const handleSearchPokemon = async (value) => {
-
-    try {
-      if (value) {
-        const { results: allPokemons } = await fetchData({ endpoint: 'pokemon/?limit=10000&offset=0' });
-        const filterPokemons = allPokemons.filter((pokemon) => pokemon.name.includes(value));
-        const pokemonList = await getPokemonInfo(filterPokemons);
-        setSearchList(pokemonList);
-      } else {
-        setSearchList([]);
-      }
-    } catch (error) {
-      console.error('Error searching Pokemon:', error);
-    }
-  }
-
-  useEffect(() => {
-    getData()
-  }, [currentPage]);
-
-  const loadPokemons = () => {
-    setCurrentPage(prevState => prevState + 1)
-
-  }
-
-  const onCardClick = async (name) => {
-
-    const pokemon = await fetchData({ endpoint: `pokemon/${name}` })
-
-    setCurrentPokemon({
-      name: name,
-      pokemonImg: pokemon.sprites.other.dream_world.front_default,
-      stats: pokemon.stats
-    })
-
-  }
-
-  const handleCloseDetail = () => {
-    setOpenDetail(false)
-  }
+    return filterPokemons.map((pokemon) => (
+      <Col style={{ width: "100%" }} span={6} key={pokemon.name}>
+        <PokemonCard {...pokemon} onClick={() => handleOpenDetail(pokemon)} />
+      </Col>
+    ));
+  };
 
   return (
-    <Row gutter={[0, 24]}>
-      <Row style={{ width: "100%" }} align={"end"}>
-        <SearchPokemon onSearch={handleSearchPokemon} />
+    <Row gutter={[32, 32]}>
+      <Row style={{ width: "100%" }} align={"center"}>
+        <SearchPokemon onSearch={(value) => setSearch(value)} />
       </Row>
-      <Row gutter={[12, 12]}>
-        {searchList.length > 0 &&
-          searchList.map((pokemon) => (
-            <Col span={6} >
-              <PokemonCard {...pokemon} onClick={onCardClick} />
-            </Col>
-          ))
-        }
-
-        {pokemons.length > 0 &&
-          pokemons.map((pokemon) => (
-            <Col span={6} >
-              <PokemonCard {...pokemon} onClick={onCardClick} />
-            </Col>
-          ))
-        }
-        
+      <Row style={{ width: "100%" }} gutter={[24, 24]} align="center">
+        {renderPokemons()}
       </Row>
-      <Row align={"center"} style={{ width: "100%" }}>
-        <Button type='primary' onClick={loadPokemons}>Cargar mas...</Button>
+      <Row style={{ width: "100%" }} gutter={[24, 24]} align={"center"}>
+        <Pagination
+          current={page}
+          pageSize={pageSize}
+          total={500}
+          onChange={handleChangePagination}
+          onShowSizeChange={handleChangeSizePagination}
+        />
       </Row>
 
-      <PokemonDetail {...currentPokemon} openModal={openDetail} handleOpenModal={handleCloseDetail} />
+      <PokemonDetail
+        {...currentPokemon}
+        openModal={openDetail}
+        handleOpenModal={() => setOpenDetail(false)}
+      />
     </Row>
-  )
+  );
 }
