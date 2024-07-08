@@ -68,14 +68,16 @@ export default function PokemonList() {
         const { results: allPokemons } = await fetchData({ endpoint: 'pokemon/?limit=10000&offset=0' });
         const filterPokemons = allPokemons.filter((pokemon) => pokemon.name.includes(value));
         if(filterPokemons.length === 0){
-          searchEmptyError(true)
+          setSearchEmptyError(true)
+          setSearchList([]);
+          setPokemons([])
         }else{
-          searchEmptyError(false)
+          setSearchEmptyError(false)
+          const pokemonsNoFilter = allPokemons.filter((pokemon) => !pokemon.name.includes(value));
+          setPokemons([...pokemonsNoFilter])
+          const pokemonList = await getPokemonInfo(filterPokemons);
+          setSearchList(pokemonList);
         }
-        const pokemonsNoFilter = allPokemons.filter((pokemon) => !pokemon.name.includes(value));
-        setPokemons([...pokemonsNoFilter])
-        const pokemonList = await getPokemonInfo(filterPokemons);
-        setSearchList(pokemonList);
       } else {
         setSearchList([]);
         setPokemons([...pokemonsBase])
