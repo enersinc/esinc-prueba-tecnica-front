@@ -114,7 +114,7 @@ export default function PokemonList() {
   const renderPokemonList = (list) =>
     list.map((pokemon) => (
       <Col span={6} key={pokemon.name}>
-        <PokemonCard {...pokemon} onClick={onCardClick} />
+        <PokemonCard {...pokemon} onClick={() => onCardClick(pokemon.name)} />
       </Col>
     ));
 
