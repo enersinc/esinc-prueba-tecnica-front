@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { fetchData } from '../../services/fetchData';
-import { Button, Col, Row, notification } from 'antd';
+import { Col, Row, notification, Pagination } from 'antd';
 import PokemonCard from '../PokemonCard/PokemonCard';
 import SearchPokemon from './SearchPokemon';
 import PokemonDetail from './PokemonDetail';
@@ -15,7 +15,8 @@ const showErrorNotification = (message) => {
 
 export default function PokemonList() {
   const [pokemons, setPokemons] = useState([]);
-  const [currentPage, setCurrentPage] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPokemons, setTotalPokemons] = useState(0);
   const [searchList, setSearchList] = useState([]);
   const [openDetail, setOpenDetail] = useState(false);
   const [currentPokemon, setCurrentPokemon] = useState({});
@@ -50,13 +51,14 @@ export default function PokemonList() {
     }
   };
 
-  const getData = async () => {
+  const getData = async (page) => {
     try {
-      const { results: allPokemons } = await fetchData({
-        endpoint: `pokemon/?limit=20&offset=${currentPage * 20}`,
+      const { count, results: allPokemons } = await fetchData({
+        endpoint: `pokemon/?limit=20&offset=${(page - 1) * 20}`,
       });
       const pokemonList = await getPokemonInfo(allPokemons);
-      setPokemons((prevState) => (currentPage > 0 ? [...prevState, ...pokemonList] : pokemonList));
+      setPokemons(pokemonList);
+      setTotalPokemons(count);
     } catch (error) {
       showErrorNotification('Error fetching data');
       console.error('Error fetching Pokemon info:', error);
@@ -80,11 +82,11 @@ export default function PokemonList() {
   };
 
   useEffect(() => {
-    getData();
+    getData(currentPage);
   }, [currentPage]);
 
-  const loadPokemons = () => {
-    setCurrentPage((prevState) => prevState + 1);
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
   };
 
   const onCardClick = async (name) => {
@@ -127,11 +129,8 @@ export default function PokemonList() {
           ))}
       </Row>
       <Row align={'center'} style={{ width: '100%' }}>
-        <Button type="primary" onClick={loadPokemons}>
-          Cargar más...
-        </Button>
+        <Pagination current={currentPage} total={totalPokemons} pageSize={20} onChange={handlePageChange} />
       </Row>
-
       <PokemonDetail {...currentPokemon} openModal={openDetail} handleOpenModal={handleCloseDetail} />
     </Row>
   );
