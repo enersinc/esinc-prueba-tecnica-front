@@ -1,9 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { fetchData } from '../../services/fetchData';
-import { Button, Col, Row } from 'antd';
+import { Button, Col, Row, notification } from 'antd';
 import PokemonCard from '../PokemonCard/PokemonCard';
 import SearchPokemon from './SearchPokemon';
 import PokemonDetail from './PokemonDetail';
+
+// Función para mostrar notificaciones de error
+const showErrorNotification = (message) => {
+  notification.error({
+    message: 'Error',
+    description: message,
+  });
+};
 
 export default function PokemonList() {
   const [pokemons, setPokemons] = useState([]);
@@ -37,6 +45,7 @@ export default function PokemonList() {
 
       return pokemonList;
     } catch (error) {
+      showErrorNotification('Error fetching Pokemon info');
       console.error('Error fetching Pokemon info:', error);
     }
   };
@@ -49,6 +58,7 @@ export default function PokemonList() {
       const pokemonList = await getPokemonInfo(allPokemons);
       setPokemons((prevState) => (currentPage > 0 ? [...prevState, ...pokemonList] : pokemonList));
     } catch (error) {
+      showErrorNotification('Error fetching data');
       console.error('Error fetching Pokemon info:', error);
     }
   };
@@ -64,6 +74,7 @@ export default function PokemonList() {
         setSearchList([]);
       }
     } catch (error) {
+      showErrorNotification('Error searching Pokemon');
       console.error('Error searching Pokemon:', error);
     }
   };
@@ -77,13 +88,18 @@ export default function PokemonList() {
   };
 
   const onCardClick = async (name) => {
-    const pokemon = await fetchData({ endpoint: `pokemon/${name}` });
-    setCurrentPokemon({
-      name: name,
-      pokemonImg: pokemon.sprites.other.dream_world.front_default,
-      stats: pokemon.stats,
-    });
-    setOpenDetail(true);
+    try {
+      const pokemon = await fetchData({ endpoint: `pokemon/${name}` });
+      setCurrentPokemon({
+        name: name,
+        pokemonImg: pokemon.sprites.other.dream_world.front_default,
+        stats: pokemon.stats,
+      });
+      setOpenDetail(true);
+    } catch (error) {
+      showErrorNotification('Error fetching Pokemon details');
+      console.error('Error fetching Pokemon details:', error);
+    }
   };
 
   const handleCloseDetail = () => {
