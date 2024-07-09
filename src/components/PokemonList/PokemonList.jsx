@@ -108,25 +108,20 @@ export default function PokemonList() {
     setOpenDetail(false);
   };
 
+  const renderPokemonList = (list) =>
+    list.map((pokemon) => (
+      <Col span={6} key={pokemon.name}>
+        <PokemonCard {...pokemon} onClick={onCardClick} />
+      </Col>
+    ));
+
   return (
     <Row gutter={[0, 24]}>
       <Row style={{ width: '100%' }} align={'end'}>
         <SearchPokemon onSearch={handleSearchPokemon} />
       </Row>
       <Row gutter={[12, 12]}>
-        {searchList.length > 0 &&
-          searchList.map((pokemon) => (
-            <Col span={6} key={pokemon.name}>
-              <PokemonCard {...pokemon} onClick={onCardClick} />
-            </Col>
-          ))}
-
-        {pokemons.length > 0 &&
-          pokemons.map((pokemon) => (
-            <Col span={6} key={pokemon.name}>
-              <PokemonCard {...pokemon} onClick={onCardClick} />
-            </Col>
-          ))}
+        {searchList.length > 0 ? renderPokemonList(searchList) : renderPokemonList(pokemons)}
       </Row>
       <Row align={'center'} style={{ width: '100%' }}>
         <Pagination current={currentPage} total={totalPokemons} pageSize={20} onChange={handlePageChange} />
