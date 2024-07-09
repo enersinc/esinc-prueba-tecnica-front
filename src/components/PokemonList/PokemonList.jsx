@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { fetchData } from '../../services/fetchData';
-import { Col, Row, notification, Pagination } from 'antd';
+import { Col, Row, notification, Pagination, Empty } from 'antd';
 import PokemonCard from '../PokemonCard/PokemonCard';
 import SearchPokemon from './SearchPokemon';
 import PokemonDetail from './PokemonDetail';
@@ -18,6 +18,7 @@ export default function PokemonList() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPokemons, setTotalPokemons] = useState(0);
   const [searchList, setSearchList] = useState([]);
+  const [searchEmpty, setSearchEmpty] = useState(false);
   const [openDetail, setOpenDetail] = useState(false);
   const [currentPokemon, setCurrentPokemon] = useState({});
 
@@ -72,8 +73,10 @@ export default function PokemonList() {
         const filterPokemons = allPokemons.filter((pokemon) => pokemon.name.includes(value));
         const pokemonList = await getPokemonInfo(filterPokemons);
         setSearchList(pokemonList);
+        setSearchEmpty(pokemonList.length === 0);
       } else {
         setSearchList([]);
+        setSearchEmpty(false);
       }
     } catch (error) {
       showErrorNotification('Error searching Pokemon');
@@ -121,7 +124,15 @@ export default function PokemonList() {
         <SearchPokemon onSearch={handleSearchPokemon} />
       </Row>
       <Row gutter={[12, 12]}>
-        {searchList.length > 0 ? renderPokemonList(searchList) : renderPokemonList(pokemons)}
+        {searchEmpty ? (
+          <Col span={24}>
+            <Empty description="No se encontraron Pokémon con ese nombre" />
+          </Col>
+        ) : searchList.length > 0 ? (
+          renderPokemonList(searchList)
+        ) : (
+          renderPokemonList(pokemons)
+        )}
       </Row>
       <Row align={'center'} style={{ width: '100%' }}>
         <Pagination current={currentPage} total={totalPokemons} pageSize={20} onChange={handlePageChange} />
