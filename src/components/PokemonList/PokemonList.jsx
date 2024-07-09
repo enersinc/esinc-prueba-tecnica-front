@@ -1,128 +1,154 @@
-import React, { useEffect,  useState } from 'react'
+import React, { useEffect, useState } from 'react';
 import { fetchData } from '../../services/fetchData';
-import { Button, Col, Row } from 'antd';
+import { Col, Row, notification, Pagination } from 'antd';
 import PokemonCard from '../PokemonCard/PokemonCard';
 import SearchPokemon from './SearchPokemon';
 import PokemonDetail from './PokemonDetail';
 
 export default function PokemonList() {
-
-  const [pokemons, setPokemons] = useState([])
-  const [currentPage, setCurrentPage] = useState(0)
-  const [searchList, setSearchList] = useState([])
-  const [openDetail, setOpenDetail] = useState(false)
-  const [currentPokemon, setCurrentPokemon] = useState({})
+  const [pokemons, setPokemons] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPokemons, setTotalPokemons] = useState(0);
+  const [searchList, setSearchList] = useState([]);
+  const [searchEmpty, setSearchEmpty] = useState(false);
+  const [openDetail, setOpenDetail] = useState(false);
+  const [currentPokemon, setCurrentPokemon] = useState({});
 
   const getPokemonIdByUrl = (url) => {
     const segments = url.split("/");
-    const pokemonId = segments[segments.length - 2]
-    return pokemonId
-
+    const pokemonId = segments[segments.length - 2];
+    return pokemonId;
   }
 
   const getPokemonInfo = async (list) => {
-
     try {
-
-      const pokemonInfo = list.map(async (pokemon) => {
-        const response = await fetchData({ endpoint: `pokemon/${getPokemonIdByUrl(pokemon.url)}` })
-        return response
-      })
-
-      const pokemonList = list.map((pokemon, index) => {
-        return {
-          name: pokemon.name,
-          pokemonImg: pokemonInfo[index].sprites.other.dream_world.front_default,
-          types: pokemonInfo[index].types
-        }
+      const pokemonInfoPromises = list.map(async (pokemon) => {
+        const response = await fetchData({ endpoint: `pokemon/${getPokemonIdByUrl(pokemon.url)}` });
+        return response;
       });
 
-      return pokemonList
+      const resolvedPokemonInfo = await Promise.all(pokemonInfoPromises);
+
+      const pokemonList = list.map((pokemon, index) => {
+        const pokemonData = resolvedPokemonInfo[index];
+        return {
+          name: pokemon.name,
+          pokemonImg: pokemonData?.sprites?.other?.dream_world?.front_default || 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/dream-world/1.svg',
+          types: pokemonData?.types || [
+            {
+              "slot": 1,
+              "type": {
+                "name": "unknown",
+                "url": "https://pokeapi.co/api/v2/type/unknown/"
+              }
+            }
+          ],
+          stats: pokemonData?.stats || []
+        };
+      });
+
+      return pokemonList;
     } catch (error) {
-      console.error('Error fetching Pokemon info:', error);
+      console.error('Error fetching Pokemon info:', error.message);
+      notification.error({
+        message: 'Error',
+        description: 'Error fetching Pokemon info. Please try again later.'
+      });
     }
   }
 
-  const getData = async () => {
-
+  const getData = async (page) => {
     try {
-      const { results: allPokemons } = await fetchData({ endpoint: `pokemon/?limit=20&offset=${currentPage * 20}` })
-      const pokemonList = await getPokemonInfo(allPokemons)
-      currentPage > 0 ? setPokemons(prevState => [prevState, pokemonList]) : setPokemons(pokemonList)
+      const offset = (page - 1) * 20;
+      const { count, results: allPokemons } = await fetchData({ endpoint: `pokemon/?limit=20&offset=${offset}` });
+      const pokemonList = await getPokemonInfo(allPokemons);
+      setPokemons(pokemonList);
+      setTotalPokemons(count);
     } catch (error) {
-      console.error('Error fetching Pokemon info:', error);
+      console.error('Error fetching Pokemon data:', error.message);
+      notification.error({
+        message: 'Error',
+        description: 'Error fetching Pokemon data. Please try again later.'
+      });
     }
   }
 
   const handleSearchPokemon = async (value) => {
-
     try {
       if (value) {
-        const { results: allPokemons } = await fetchData({ endpoint: 'pokemon/?limit=10000&offset=0' });
-        const filterPokemons = allPokemons.filter((pokemon) => pokemon.name.includes(value));
-        const pokemonList = await getPokemonInfo(filterPokemons);
-        setSearchList(pokemonList);
+        const allPokemons = await fetchData({ endpoint: `pokemon/?limit=10000&offset=0` });
+        const filterPokemons = allPokemons.results.filter(pokemon => pokemon.name.includes(value.toLowerCase()));
+
+        if (filterPokemons.length === 0) {
+          setSearchEmpty(true);
+          setSearchList([]);
+          return;
+        }
+
+        const detailedPokemonList = await getPokemonInfo(filterPokemons);
+        setSearchList(detailedPokemonList);
+        setSearchEmpty(detailedPokemonList.length === 0);
       } else {
         setSearchList([]);
+        setSearchEmpty(false);
       }
     } catch (error) {
-      console.error('Error searching Pokemon:', error);
+      if (error.message === '404 Not Found') {
+        setSearchList([]);
+        setSearchEmpty(true);
+        notification.error({
+          message: 'Pokemon not found',
+          description: `The Pokemon "${value}" does not exist. Please try searching for another Pokemon.`
+        });
+      } else {
+        console.error('Error searching Pokemon:', error.message);
+        notification.error({
+          message: 'Error',
+          description: 'Error searching Pokemon. Please try again later.'
+        });
+      }
     }
   }
 
+  const handleCardClick = (pokemon) => {
+    setCurrentPokemon(pokemon);
+    setOpenDetail(true);
+  };
+
   useEffect(() => {
-    getData()
+    getData(currentPage);
   }, [currentPage]);
 
-  const loadPokemons = () => {
-    setCurrentPage(prevState => prevState + 1)
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
 
-  }
-
-  const onCardClick = async (name) => {
-
-    const pokemon = await fetchData({ endpoint: `pokemon/${name}` })
-
-    setCurrentPokemon({
-      name: name,
-      pokemonImg: pokemon.sprites.other.dream_world.front_default,
-      stats: pokemon.stats
-    })
-
-  }
-
-  const handleCloseDetail = () => {
-    setOpenDetail(false)
-  }
+  const renderPokemonList = (list) => (
+    <Row gutter={[16, 16]}>
+      {list.map((pokemon, index) => (
+        <Col key={index} span={8}>
+          <PokemonCard {...pokemon} onClick={() => handleCardClick(pokemon)} />
+        </Col>
+      ))}
+    </Row>
+  );
 
   return (
-    <Row gutter={[0, 24]}>
-      <Row style={{ width: "100%" }} align={"end"}>
-        <SearchPokemon onSearch={handleSearchPokemon} />
-      </Row>
-      <Row gutter={[12, 12]}>
-        {searchList.length > 0 &&
-          searchList.map((pokemon) => (
-            <Col span={6} >
-              <PokemonCard {...pokemon} onClick={onCardClick} />
-            </Col>
-          ))
-        }
-
-        {pokemons.length > 0 &&
-          pokemons.map((pokemon) => (
-            <Col span={6} >
-              <PokemonCard {...pokemon} onClick={onCardClick} />
-            </Col>
-          ))
-        }
-        
-      </Row>
-      <Row align={"center"} style={{ width: "100%" }}>
-        <Button type='primary' onClick={loadPokemons}>Cargar mas...</Button>
-      </Row>
-
-      <PokemonDetail {...currentPokemon} openModal={openDetail} handleOpenModal={handleCloseDetail} />
-    </Row>
-  )
+    <div>
+      <SearchPokemon onSearch={handleSearchPokemon} />
+      {searchEmpty ? (
+        <p>No se encuentra el pokemón.</p>
+      ) : (
+        searchList.length > 0 ? renderPokemonList(searchList) : renderPokemonList(pokemons)
+      )}
+      {openDetail && <PokemonDetail {...currentPokemon} openModal={openDetail} handleOpenModal={() => setOpenDetail(false)} />}
+      <Pagination
+        current={currentPage}
+        total={totalPokemons}
+        pageSize={20}
+        onChange={handlePageChange}
+        style={{ marginTop: '20px', textAlign: 'center' }}
+      />
+    </div>
+  );
 }
