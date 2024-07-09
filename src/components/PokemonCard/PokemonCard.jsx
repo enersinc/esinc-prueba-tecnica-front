@@ -4,6 +4,7 @@ import PropTypes from 'prop-types';
 import { TYPE_LIST } from './typeList'
 
 export default function PokemonCard({ name, pokemonImg, types,  onClick }) {
+  console.log(types)
   return (
     <Card
       onClick={() => onClick(name)}
