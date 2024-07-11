@@ -8,9 +8,8 @@ import ErrorNotification from "../Notifications/ErrorNotification";
 
 export default function PokemonList() {
   const [pokemons, setPokemons] = useState([]);
-  const [currentPage, setCurrentPage] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
   const [totalPokemons, setTotalPokemons] = useState(0);
-  const [searchList, setSearchList] = useState([]);
   const [openDetail, setOpenDetail] = useState(false);
   const [currentPokemon, setCurrentPokemon] = useState({});
   const [errorNotification, setErrorNotification] = useState(false);
@@ -56,7 +55,7 @@ export default function PokemonList() {
   const getData = async () => {
     try {
       const { results: allPokemons, count } = await fetchData({
-        endpoint: `pokemon/?limit=20&offset=${currentPage * 20}`,
+        endpoint: `pokemon/?limit=20&offset=${(currentPage - 1) * 20}`,
       });
       const pokemonList = await getPokemonInfo(allPokemons);
       setPokemons(pokemonList);
@@ -76,9 +75,10 @@ export default function PokemonList() {
           pokemon.name.includes(value)
         );
         const pokemonList = await getPokemonInfo(filterPokemons);
-        setSearchList(pokemonList);
+        setPokemons(pokemonList);
+        setTotalPokemons(pokemonList.length);
       } else {
-        setSearchList([]);
+        getData();
       }
     } catch (error) {
       setErrorModalData("Error searching Pokemon");
@@ -88,10 +88,6 @@ export default function PokemonList() {
   useEffect(() => {
     getData();
   }, [currentPage]);
-
-  const loadPokemons = () => {
-    setCurrentPage((prevState) => prevState + 1);
-  };
 
   const onCardClick = async (name) => {
     const pokemon = await fetchData({ endpoint: `pokemon/${name}` });
@@ -114,34 +110,33 @@ export default function PokemonList() {
 
   return (
     <Row gutter={[0, 24]}>
-      <Row style={{ width: "100%" }} align={"end"}>
-        <SearchPokemon onSearch={handleSearchPokemon} />
-      </Row>
-      <Row gutter={[12, 12]}>
-        {searchList &&
-          searchList.length > 0 &&
-          searchList.map((pokemon) => (
-            <Col span={6}>
-              <PokemonCard {...pokemon} onClick={onCardClick} />
-            </Col>
-          ))}
-
-        {pokemons &&
-          pokemons.length > 0 &&
-          pokemons.map((pokemon) => (
-            <Col span={6}>
-              <PokemonCard {...pokemon} onClick={onCardClick} />
-            </Col>
-          ))}
-      </Row>
-      <Row align={"center"} style={{ width: "100%" }}>
-        <Pagination
-          align="center"
-          defaultCurrent={1}
-          total={totalPokemons}
-          onChange={handlePaginatorEvent}
-        />
-      </Row>
+          <Row style={{ width: "100%" }} align={"end"}>
+            <SearchPokemon onSearch={handleSearchPokemon} />
+          </Row>
+      {pokemons && pokemons.length > 0 && (
+        <>
+          <Row gutter={[12, 12]}>
+            {pokemons.map((pokemon) => (
+              <Col span={6}>
+                <PokemonCard {...pokemon} onClick={onCardClick} />
+              </Col>
+            ))}
+          </Row>
+          <Row align={"center"} style={{ width: "100%" }}>
+            <Pagination
+              align="center"
+              defaultCurrent={1}
+              total={totalPokemons}
+              onChange={handlePaginatorEvent}
+            />
+          </Row>
+        </>
+      )}
+      {pokemons && pokemons.length === 0 && (
+        <Row align={"center"} style={{ width: "100%" }}>
+          <h2>No Encontrado</h2>
+        </Row>
+      )}
       <ErrorNotification
         message={errorMessage}
         errorNotification={errorNotification}
