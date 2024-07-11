@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { fetchData } from "../../services/fetchData";
-import { Button, Col, Row } from "antd";
+import { Col, Row, Pagination } from "antd";
 import PokemonCard from "../PokemonCard/PokemonCard";
 import SearchPokemon from "./SearchPokemon";
 import PokemonDetail from "./PokemonDetail";
@@ -9,6 +9,7 @@ import ErrorNotification from "../Notifications/ErrorNotification";
 export default function PokemonList() {
   const [pokemons, setPokemons] = useState([]);
   const [currentPage, setCurrentPage] = useState(0);
+  const [totalPokemons, setTotalPokemons] = useState(0);
   const [searchList, setSearchList] = useState([]);
   const [openDetail, setOpenDetail] = useState(false);
   const [currentPokemon, setCurrentPokemon] = useState({});
@@ -54,13 +55,12 @@ export default function PokemonList() {
 
   const getData = async () => {
     try {
-      const { results: allPokemons } = await fetchData({
+      const { results: allPokemons, count } = await fetchData({
         endpoint: `pokemon/?limit=20&offset=${currentPage * 20}`,
       });
       const pokemonList = await getPokemonInfo(allPokemons);
-      currentPage > 0
-        ? setPokemons((prevState) => [prevState, pokemonList])
-        : setPokemons(pokemonList);
+      setPokemons(pokemonList);
+      setTotalPokemons(count);
     } catch (error) {
       setErrorModalData("Error fetching Pokemon info");
     }
@@ -107,6 +107,11 @@ export default function PokemonList() {
     setOpenDetail(false);
   };
 
+  const handlePaginatorEvent = (currentPag) => {
+    setCurrentPage(currentPag);
+    getData();
+  };
+
   return (
     <Row gutter={[0, 24]}>
       <Row style={{ width: "100%" }} align={"end"}>
@@ -130,9 +135,12 @@ export default function PokemonList() {
           ))}
       </Row>
       <Row align={"center"} style={{ width: "100%" }}>
-        <Button type="primary" onClick={loadPokemons}>
-          Cargar mas...
-        </Button>
+        <Pagination
+          align="center"
+          defaultCurrent={1}
+          total={totalPokemons}
+          onChange={handlePaginatorEvent}
+        />
       </Row>
       <ErrorNotification
         message={errorMessage}
