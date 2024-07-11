@@ -24,10 +24,10 @@ export default function PokemonList() {
 
     try {
 
-      const pokemonInfo = list.map(async (pokemon) => {
+      const pokemonInfo = await Promise.all(list.map(async (pokemon) => {
         const response = await fetchData({ endpoint: `pokemon/${getPokemonIdByUrl(pokemon.url)}` })
         return response
-      })
+      }))
 
       const pokemonList = list.map((pokemon, index) => {
         return {
