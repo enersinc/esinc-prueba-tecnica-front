@@ -97,6 +97,7 @@ export default function PokemonList() {
       pokemonImg: pokemon.sprites.other.dream_world.front_default,
       stats: pokemon.stats,
     });
+    setOpenDetail(true);
   };
 
   const handleCloseDetail = () => {
